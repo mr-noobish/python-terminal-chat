@@ -1,33 +1,54 @@
 import socket
 import threading
 
-HEADER = 1024
-PORT = 5050
-SERVER = input("server ip: ")
-DISCONNECT_MSG = "/disconnect"
-FORMAT = 'ascii'
-ADDR = (SERVER, PORT)
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADDR)
+GLOBAL_NICK = input("global nick?: ")
+HEADER = 1024
+FORMAT = 'ascii'
 
 def receive():
     while True:
+        global connected
         try:
             message = client.recv(HEADER).decode(FORMAT)
             print(message)
         except:
             print("an error occured")
+            connected = False
             client.close()
             break
 
 def write():
     while True:
-        message = input(": ")
-        client.send(message.encode(FORMAT))
+        global connected
+        message = input("")
+        if connected:
+            client.send(message.encode(FORMAT))
+        else:
+            reconnect = input("would you like to connect to a new server y/n: ")
+            if reconnect == ("y" or "Y"):
+                join_server()
+            else:
+                exit()
+                
+def join_server():
+    SERVER = input("server ip: ")
+    PORT = int(input("port: "))
+    ADDR = (SERVER, PORT)
 
-receive_thread = threading.Thread(target=receive)
-receive_thread.start()
+    global client
 
-write_thread = threading.Thread(target=write)
-write_thread.start()
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(ADDR)
+    global connected
+    connected = True
+    nick = GLOBAL_NICK
+    client.send(nick.encode(FORMAT))
+
+    receive_thread = threading.Thread(target=receive)
+    receive_thread.start()
+
+    write_thread = threading.Thread(target=write)
+    write_thread.start()
+
+join_server()
